@@ -88,6 +88,16 @@ Content-Type: application/json
 GET /verify?email=user@example.com&token=YOUR_TOKEN
 ```
 
+## API Documentation (Swagger)
+
+After starting the server, access the Swagger UI at:
+
+    http://localhost:8000/swagger/index.html
+
+To update the docs after changing endpoints or comments, run:
+
+    swag init
+
 ## Project Structure
 
 ```

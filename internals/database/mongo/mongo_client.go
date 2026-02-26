@@ -14,6 +14,10 @@ var (
 	mongoClient *mongo.Client
 )
 
+func collection() *mongo.Collection {
+	return mongoClient.Database("downtime").Collection("users")
+}
+
 func Init() {
 	uri := os.Getenv("MONGODB_URI")
 	if uri == "" {
@@ -28,7 +32,7 @@ func Init() {
 }
 
 func AddWebsite(email string, website string) error {
-	collection := mongoClient.Database("downtimetracker").Collection("users")
+	col := collection()
 
 	filter := bson.M{"email": email}
 
@@ -43,18 +47,18 @@ func AddWebsite(email string, website string) error {
 
 	opts := options.UpdateOne().SetUpsert(true)
 
-	_, err := collection.UpdateOne(ctx, filter, update, opts)
+	_, err := col.UpdateOne(ctx, filter, update, opts)
 	return err
 }
 
 func GetWebsites(email string) ([]string, error) {
-	collection := mongoClient.Database("downtimetracker").Collection("users")
+	col := collection()
 
 	var result struct {
 		Websites []string `bson:"websites"`
 	}
 
-	err := collection.FindOne(ctx, bson.M{"email": email}).Decode(&result)
+	err := col.FindOne(ctx, bson.M{"email": email}).Decode(&result)
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +67,7 @@ func GetWebsites(email string) ([]string, error) {
 }
 
 func RemoveWebsite(email string, website string) error {
-	collection := mongoClient.Database("downtimetracker").Collection("users")
+	col := collection()
 
 	filter := bson.M{"email": email}
 	update := bson.M{
@@ -72,33 +76,32 @@ func RemoveWebsite(email string, website string) error {
 		},
 	}
 
-	_, err := collection.UpdateOne(ctx, filter, update)
+	_, err := col.UpdateOne(ctx, filter, update)
 	return err
 }
 
 func IsMail(email string) bool {
-	collection := mongoClient.Database("downtimetracker").Collection("users")
-	err := collection.FindOne(ctx, bson.M{"email": email}).Err()
+	err := collection().FindOne(ctx, bson.M{"email": email}).Err()
 	return err == nil
 }
 
 func WebsiteExists(email string, website string) bool {
-	collection := mongoClient.Database("downtimetracker").Collection("users")
+	col := collection()
 
 	filter := bson.M{
 		"email":    email,
 		"websites": website,
 	}
 
-	err := collection.FindOne(ctx, filter).Err()
+	err := col.FindOne(ctx, filter).Err()
 	return err == nil
 }
 
 func IsVerified(email string) bool {
-	collection := mongoClient.Database("downtimetracker").Collection("users")
+	col := collection()
 
 	var result bson.M
-	err := collection.FindOne(ctx, bson.M{"email": email}).Decode(&result)
+	err := col.FindOne(ctx, bson.M{"email": email}).Decode(&result)
 	if err != nil {
 		return false
 	}
@@ -108,8 +111,7 @@ func IsVerified(email string) bool {
 }
 
 func VerifyEmail(email string) error {
-	collection := mongoClient.Database("downtimetracker").Collection("users")
-	_, err := collection.UpdateOne(ctx, bson.M{"email": email}, bson.M{"$set": bson.M{"verified": true}})
+	_, err := collection().UpdateOne(ctx, bson.M{"email": email}, bson.M{"$set": bson.M{"verified": true}})
 	return err
 }
 
@@ -121,9 +123,9 @@ func GetAllUsersWithWebsites() ([]struct {
 	Email    string   `bson:"email"`
 	Websites []string `bson:"websites"`
 }, error) {
-	collection := mongoClient.Database("downtimetracker").Collection("users")
+	col := collection()
 	ctx := context.TODO()
-	cur, err := collection.Find(ctx, bson.M{"verified": true})
+	cur, err := col.Find(ctx, bson.M{"verified": true})
 	if err != nil {
 		return nil, err
 	}

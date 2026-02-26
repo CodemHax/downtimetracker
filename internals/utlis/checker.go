@@ -40,25 +40,26 @@ func setStatus(ctx context.Context, email, url, status string) {
 	redis.RDB.Set(ctx, key, status, 24*time.Hour)
 }
 
-var httpClient = &http.Client{
-	Timeout: 10 * time.Second,
-	Transport: &http.Transport{
-		MaxIdleConns:        100,
-		MaxIdleConnsPerHost: 10,
-		IdleConnTimeout:     90 * time.Second,
-		TLSClientConfig:     &tls.Config{InsecureSkipVerify: false},
-	},
+var httpClient *http.Client
+
+func init() {
+	timeout := 10 * time.Second
+	if t, err := strconv.Atoi(os.Getenv("CHECKER_TIMEOUT")); err == nil && t > 0 {
+		timeout = time.Duration(t) * time.Millisecond
+	}
+	httpClient = &http.Client{
+		Timeout: timeout,
+		Transport: &http.Transport{
+			MaxIdleConns:        100,
+			MaxIdleConnsPerHost: 10,
+			IdleConnTimeout:     90 * time.Second,
+			TLSClientConfig:     &tls.Config{InsecureSkipVerify: false},
+		},
+	}
 }
 
 func CheckServiceDowntime(url string, recipientEmail string) error {
 	ctx := context.Background()
-
-	timeoutStr := os.Getenv("CHECKER_TIMEOUT")
-	if timeoutStr != "" {
-		if t, err := strconv.Atoi(timeoutStr); err == nil && t > 0 {
-			httpClient.Timeout = time.Duration(t) * time.Second
-		}
-	}
 
 	if len(url) < 8 || url[:8] != "https://" {
 		return fmt.Errorf("only HTTPS URLs are supported")
@@ -79,7 +80,10 @@ func CheckServiceDowntime(url string, recipientEmail string) error {
 	} else {
 		defer func() {
 			_, _ = io.Copy(io.Discard, resp.Body)
-			resp.Body.Close()
+			err := resp.Body.Close()
+			if err != nil {
+				return
+			}
 		}()
 
 		if resp.StatusCode >= 500 && resp.StatusCode < 600 {
@@ -95,19 +99,23 @@ func CheckServiceDowntime(url string, recipientEmail string) error {
 
 		if currentStatus == StatusDown {
 			log.Printf("🔴 Service %s is DOWN for %s (was %s). Error: %s", url, recipientEmail, lastStatus, errMsg)
-			_ = mail.SendMail(recipientEmail, fmt.Sprintf(
+			if err := mail.SendMail(recipientEmail, fmt.Sprintf(
 				"<h2>🔴 Service Down Alert</h2>"+
 					"<p>Your service <strong>%s</strong> is <strong>DOWN</strong>.</p>"+
 					"<p>Error: %s</p>"+
 					"<p>Time: %s</p>",
-				url, errMsg, time.Now().Format(time.RFC1123)))
+				url, errMsg, time.Now().Format(time.RFC1123))); err != nil {
+				log.Printf("[ERROR] Failed to send DOWN alert to %s: %v", recipientEmail, err)
+			}
 		} else if currentStatus == StatusUp && lastStatus == StatusDown {
 			log.Printf("🟢 Service %s is RECOVERED for %s", url, recipientEmail)
-			_ = mail.SendMail(recipientEmail, fmt.Sprintf(
+			if err := mail.SendMail(recipientEmail, fmt.Sprintf(
 				"<h2>🟢 Service Recovered</h2>"+
 					"<p>Your service <strong>%s</strong> is <strong>BACK UP</strong>.</p>"+
 					"<p>Time: %s</p>",
-				url, time.Now().Format(time.RFC1123)))
+				url, time.Now().Format(time.RFC1123))); err != nil {
+				log.Printf("[ERROR] Failed to send RECOVERY alert to %s: %v", recipientEmail, err)
+			}
 		}
 	} else {
 		if currentStatus == StatusDown {

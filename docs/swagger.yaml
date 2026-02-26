@@ -1,0 +1,151 @@
+definitions:
+  models.WebIn:
+    properties:
+      email:
+        type: string
+      website:
+        type: string
+    required:
+    - email
+    - website
+    type: object
+info:
+  contact: {}
+paths:
+  /add:
+    post:
+      consumes:
+      - application/json
+      description: Adds a website for monitoring and sends verification email
+      parameters:
+      - description: Website info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.WebIn'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Add a website
+      tags:
+      - website
+  /deleteweb:
+    delete:
+      consumes:
+      - application/json
+      description: Removes a website from the user's list
+      parameters:
+      - description: Delete Website
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.WebIn'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Delete a website for a user
+      tags:
+      - website
+  /force-check:
+    post:
+      description: Manually initiates a background check for all verified websites
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Force check all websites
+      tags:
+      - website
+  /verify:
+    get:
+      description: Verifies a user's email using a token
+      parameters:
+      - description: User Email
+        in: query
+        name: email
+        required: true
+        type: string
+      - description: Verification Token
+        in: query
+        name: token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Verify email
+      tags:
+      - website
+  /websites:
+    get:
+      description: Returns all websites associated with the given email
+      parameters:
+      - description: User Email
+        in: query
+        name: email
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              items:
+                type: string
+              type: array
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get all websites for a user
+      tags:
+      - website
+swagger: "2.0"
