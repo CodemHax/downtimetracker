@@ -1,0 +1,220 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+
+:root {
+    --bg-color: #000000;
+    --surface-color: #0a0a0a;
+    --border-color: #333333;
+    --primary-color: #ffffff;
+    --primary-hover: #cccccc;
+    --danger-color: #ff3333;
+    --success-color: #00cc66;
+    --text-primary: #ffffff;
+    --text-secondary: #888888;
+}
+
+body {
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding-top: 10vh;
+}
+
+.glass-container {
+    width: 100%;
+    max-width: 800px;
+    padding: 0 40px;
+}
+
+.glass-container.centered {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 70vh;
+}
+
+.auth-panel {
+    width: 100%;
+    max-width: 320px;
+}
+
+h1, h2 {
+    font-weight: 500;
+    letter-spacing: -0.03em;
+    margin-bottom: 8px;
+}
+
+h1 { font-size: 2rem; }
+h2 { font-size: 1.25rem; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 24px;}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 60px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.user-controls {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    font-size: 0.9rem;
+}
+
+.user-controls span {
+    color: var(--text-muted);
+}
+
+.btn {
+    padding: 10px 16px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    transition: all 0.2s ease;
+    border-radius: 0;
+}
+
+.btn:hover {
+    background: var(--text-primary);
+    color: var(--bg-color);
+}
+
+.btn.primary {
+    background: var(--text-primary);
+    color: var(--bg-color);
+    border: none;
+}
+
+.btn.primary:hover {
+    opacity: 0.8;
+}
+
+.btn.danger {
+    color: var(--danger-color);
+    border-color: var(--border-color);
+}
+
+.btn.danger:hover {
+    background: var(--danger-color);
+    color: var(--bg-color);
+    border-color: var(--danger-color);
+}
+
+.btn.full-width {
+    width: 100%;
+    margin-top: 10px;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.input-group label {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+input {
+    padding: 12px 0;
+    border: none;
+    border-bottom: 1px solid var(--border-color);
+    background: transparent;
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 1rem;
+    transition: border-color 0.2s;
+    border-radius: 0;
+}
+
+input:focus {
+    outline: none;
+    border-color: var(--text-primary);
+}
+
+.message {
+    font-size: 0.85rem;
+    margin-top: 15px;
+    min-height: 20px;
+}
+
+.message.error { color: var(--danger-color); }
+.message.success { color: var(--success-color); }
+
+.auth-links {
+    margin-top: 30px;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.auth-links a {
+    color: var(--text-primary);
+    text-decoration: none;
+    border-bottom: 1px solid var(--text-primary);
+}
+
+.auth-links a:hover {
+    opacity: 0.7;
+}
+
+.website-list-section {
+    margin-top: 60px;
+}
+
+.website-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.website-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.site-info {
+    display: flex;
+    align-items: baseline;
+    gap: 15px;
+}
+
+.site-url {
+    font-weight: 400;
+    font-size: 1.1rem;
+}
+
+.site-status {
+    font-size: 0.8rem;
+    color: var(--success-color);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
