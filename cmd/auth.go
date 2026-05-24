@@ -16,16 +16,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// Register godoc
-// @Summary      Register User
-// @Description  Create a new user account with email and password, and send verification email
-// @Tags         auth
-// @Accept       json
-// @Produce      json
-// @Param        request body models.AuthIn true "Credentials"
-// @Success      200 {object} models.AuthOut
-// @Failure      400 {object} map[string]string
-// @Router       /auth/register [post]
+
 func Register(context *gin.Context) {
 	var req models.AuthIn
 	if err := context.ShouldBindJSON(&req); err != nil {
@@ -45,11 +36,11 @@ func Register(context *gin.Context) {
 		return
 	}
 
-	// Email Verification Logic
 	token := utils.TokenGen()
 	ctx := context.Request.Context()
 	errSet := redis.RDB.Set(ctx, req.Email, token, 350*time.Second).Err()
 	if errSet != nil {
+		log.Printf("[ERROR] Redis OTP save failed for %s: %v", req.Email, errSet)
 		context.JSON(500, gin.H{"error": "error saving OTP"})
 		return
 	}
@@ -71,16 +62,7 @@ func Register(context *gin.Context) {
 	context.JSON(200, models.AuthOut{Message: "Registration successful. Please check your email to verify your account."})
 }
 
-// Login godoc
-// @Summary      Login User
-// @Description  Login with email and password to receive JWT cookies
-// @Tags         auth
-// @Accept       json
-// @Produce      json
-// @Param        request body models.AuthIn true "Credentials"
-// @Success      200 {object} models.AuthOut
-// @Failure      400 {object} map[string]string
-// @Router       /auth/login [post]
+
 func Login(context *gin.Context) {
 	var req models.AuthIn
 	if err := context.ShouldBindJSON(&req); err != nil {
@@ -123,13 +105,7 @@ func Login(context *gin.Context) {
 	context.JSON(200, models.AuthOut{Message: "Successfully logged in"})
 }
 
-// Logout godoc
-// @Summary      Logout User
-// @Description  Deletes session from Redis and clears cookies
-// @Tags         auth
-// @Produce      json
-// @Success      200 {object} map[string]string
-// @Router       /auth/logout [post]
+
 func Logout(context *gin.Context) {
 	email := context.GetString("email")
 	if email != "" {
@@ -143,13 +119,7 @@ func Logout(context *gin.Context) {
 	context.JSON(200, gin.H{"message": "Logged out successfully"})
 }
 
-// GetMe godoc
-// @Summary      Get current user
-// @Description  Returns the email of the currently authenticated user based on the secure cookie
-// @Tags         auth
-// @Produce      json
-// @Success      200 {object} map[string]string
-// @Router       /auth/me [get]
+
 func GetMe(context *gin.Context) {
 	email := context.GetString("email")
 	if email == "" {
@@ -157,4 +127,77 @@ func GetMe(context *gin.Context) {
 		return
 	}
 	context.JSON(200, gin.H{"email": email})
+}
+
+
+func ForgotPassword(context *gin.Context) {
+	var req models.ForgotPasswordIn
+	if err := context.ShouldBindJSON(&req); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	successResponse := gin.H{"message": "If the email is registered, a password reset link has been sent."}
+
+	if !mongo.IsMail(req.Email) || !mongo.IsVerified(req.Email) {
+		context.JSON(200, successResponse)
+		return
+	}
+
+	token := utils.TokenGen()
+	ctx := context.Request.Context()
+	errSet := redis.RDB.Set(ctx, "reset:"+req.Email, token, 15*time.Minute).Err()
+	if errSet != nil {
+		log.Printf("[ERROR] Redis reset token save failed for %s: %v", req.Email, errSet)
+		context.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to store reset token"})
+		return
+	}
+
+	uri := os.Getenv("LINK")
+	if uri == "" {
+		uri = "http://localhost:8080"
+	}
+	resetLink := uri + "/reset-password.html?email=" + url.QueryEscape(req.Email) + "&token=" + url.QueryEscape(token)
+	body := `<h2>Downtime Tracker - Reset Your Password</h2>
+<p>Please reset your password by clicking the link below:</p>
+<p><a href="` + resetLink + `">Click here to reset your password</a></p>
+<p><strong>This link is valid for 15 minutes.</strong></p>`
+
+	if err := mail.SendMail(req.Email, body); err != nil {
+		log.Printf("[ERROR] Failed to send reset email: %v", err)
+	}
+
+	context.JSON(200, successResponse)
+}
+
+
+func ResetPassword(context *gin.Context) {
+	var req models.ResetPasswordIn
+	if err := context.ShouldBindJSON(&req); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx := context.Request.Context()
+	storedToken, err := redis.RDB.Get(ctx, "reset:"+req.Email).Result()
+	if err != nil || storedToken != req.Token {
+		context.JSON(http.StatusBadRequest, gin.H{"error": "Invalid or expired password reset link."})
+		return
+	}
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
+		return
+	}
+
+	err = mongo.UpdatePassword(req.Email, string(hash))
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update password"})
+		return
+	}
+
+	redis.RDB.Del(ctx, "reset:"+req.Email)
+
+	context.JSON(200, gin.H{"message": "Your password has been successfully reset. Please log in with your new password."})
 }

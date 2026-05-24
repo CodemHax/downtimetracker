@@ -3,42 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Downtime Tracker - Dashboard</title>
+    <meta name="description" content="Downtime Tracker Dashboard — monitor all your websites.">
+    <title>Dashboard — Downtime Tracker</title>
     <link rel="stylesheet" href="/css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="glass-container">
-        <header>
+    <div class="dash-layout">
+        <header class="dash-header">
             <h1>Downtime Tracker</h1>
-            <div class="user-controls">
-                <span id="userEmail"></span>
-                <button id="logoutBtn" class="btn secondary">Logout</button>
+            <div class="user-meta">
+                <span id="userEmail" class="user-email"></span>
+                <button id="logoutBtn" class="btn btn-sm">Logout</button>
             </div>
         </header>
 
-        <section class="add-website-section">
-            <h2>Track a New Website</h2>
-            <form id="addWebForm">
-                <input type="text" id="websiteUrl" placeholder="https://example.com" required>
-                <div class="form-actions">
-                    <button type="submit" class="btn primary">Add Tracker</button>
-                    <button type="button" id="forceCheckBtn" class="btn secondary">Force Check All</button>
-                </div>
-            </form>
-    </form>
-    <p id="addMessage" class="message"></p>
-</section>
+        <section class="dash-section">
+            <p class="section-label">Track a website</p>
+            <div class="add-row">
+                <input type="text" id="websiteUrl" placeholder="https://example.com">
+                <button id="addBtn" class="btn btn-primary">Add</button>
+                <button id="forceCheckBtn" class="btn">Check all</button>
+            </div>
+            <p id="addMessage" class="msg"></p>
+        </section>
 
-<section class="website-list-section">
-    <h2>Your Tracked Websites</h2>
-    <ul id="websiteList" class="website-list">
-        <!-- Injected via JS -->
-    </ul>
-</section>
-</div>
+        <section class="dash-section">
+            <p class="section-label">Monitored websites</p>
+            <ul id="websiteList" class="site-list">
+                <li class="state-text">Loading...</li>
+            </ul>
+        </section>
+    </div>
 
-<script src="/config.js"></script>
-<script type="module" src="/js/dashboard.js"></script>
+    <div id="toast"></div>
+
+    <script src="/config.js"></script>
+    <script type="module" src="/js/dashboard.js"></script>
 </body>
 </html>

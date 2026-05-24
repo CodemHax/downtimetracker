@@ -65,7 +65,7 @@ func AuthMiddleware() gin.HandlerFunc {
 
 		newAccess, newRefresh, err := utils.GenerateTokens(email)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Sever minting failed"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Token generation failed"})
 			c.Abort()
 			return
 		}

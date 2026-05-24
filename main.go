@@ -54,6 +54,8 @@ func main() {
 	r.POST("/auth/register", cmd.Register)
 	r.POST("/auth/login", cmd.Login)
 	r.POST("/auth/logout", cmd.Logout)
+	r.POST("/auth/forgot-password", cmd.ForgotPassword)
+	r.POST("/auth/reset-password", cmd.ResetPassword)
 
 	protected := r.Group("/")
 	protected.Use(cmd.AuthMiddleware())

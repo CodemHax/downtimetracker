@@ -6,6 +6,8 @@
 *.dylib
 downtimetrscker.exe
 downtimetrscker
+tracker
+*.emc
 
 # Test binary
 *.test

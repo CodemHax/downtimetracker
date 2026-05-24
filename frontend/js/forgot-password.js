@@ -1,41 +1,33 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const form = document.getElementById('registerForm')
+    const form = document.getElementById('forgotForm')
     const msg = document.getElementById('authMessage')
     const btn = document.getElementById('submitBtn')
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault()
         setMsg(msg, '')
-        setLoading(btn, true, 'Creating account...')
+        setLoading(btn, true, 'Sending...')
 
         const email = document.getElementById('email').value.trim()
-        const password = document.getElementById('password').value
-
-        if (password.length < 6) {
-            setMsg(msg, 'Password must be at least 6 characters.', 'error')
-            setLoading(btn, false, 'Create account')
-            return
-        }
 
         try {
-            const res = await fetch(`${window.API_URL}/auth/register`, {
+            const res = await fetch(`${window.API_URL}/auth/forgot-password`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ email, password })
+                body: JSON.stringify({ email })
             })
             const data = await res.json()
 
             if (res.ok) {
-                setMsg(msg, data.message || 'Registered! Check your email to verify.', 'success')
+                setMsg(msg, data.message || 'If this email exists, a reset link has been sent.', 'success')
                 form.reset()
             } else {
-                setMsg(msg, data.error || 'Registration failed', 'error')
+                setMsg(msg, data.error || 'Something went wrong', 'error')
             }
         } catch {
             setMsg(msg, 'Network error. Is the server running?', 'error')
         } finally {
-            setLoading(btn, false, 'Create account')
+            setLoading(btn, false, 'Send reset link')
         }
     })
 })

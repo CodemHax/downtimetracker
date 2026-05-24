@@ -2,6 +2,7 @@ package mongo
 
 import (
 	"context"
+	"errors"
 	"os"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -9,10 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
-var (
-	ctx         = context.TODO()
-	mongoClient *mongo.Client
-)
+var mongoClient *mongo.Client
 
 func collection() *mongo.Collection {
 	return mongoClient.Database("downtime").Collection("users")
@@ -32,9 +30,16 @@ func Init() {
 }
 
 func RegisterUser(email, passwordHash string) error {
+	ctx := context.Background()
 	col := collection()
 	if IsMail(email) {
-		return context.Canceled // will return normal error
+		if IsVerified(email) {
+			return errors.New("email is already registered")
+		}
+		_, err := col.DeleteOne(ctx, bson.M{"email": email, "verified": false})
+		if err != nil {
+			return err
+		}
 	}
 	_, err := col.InsertOne(ctx, bson.M{
 		"email":    email,
@@ -46,6 +51,7 @@ func RegisterUser(email, passwordHash string) error {
 }
 
 func GetUserAuth(email string) (string, bool, error) {
+	ctx := context.Background()
 	col := collection()
 	var result bson.M
 	err := col.FindOne(ctx, bson.M{"email": email}).Decode(&result)
@@ -58,6 +64,7 @@ func GetUserAuth(email string) (string, bool, error) {
 }
 
 func AddWebsite(email string, website string) error {
+	ctx := context.Background()
 	col := collection()
 	filter := bson.M{"email": email}
 	update := bson.M{
@@ -73,6 +80,7 @@ func AddWebsite(email string, website string) error {
 }
 
 func GetWebsites(email string) ([]string, error) {
+	ctx := context.Background()
 	col := collection()
 
 	var result struct {
@@ -88,6 +96,7 @@ func GetWebsites(email string) ([]string, error) {
 }
 
 func RemoveWebsite(email string, website string) error {
+	ctx := context.Background()
 	col := collection()
 
 	filter := bson.M{"email": email}
@@ -102,7 +111,7 @@ func RemoveWebsite(email string, website string) error {
 }
 
 func IsMail(email string) bool {
-	err := collection().FindOne(ctx, bson.M{"email": email}).Err()
+	err := collection().FindOne(context.Background(), bson.M{"email": email}).Err()
 	return err == nil
 }
 
@@ -114,7 +123,7 @@ func WebsiteExists(email string, website string) bool {
 		"websites": website,
 	}
 
-	err := col.FindOne(ctx, filter).Err()
+	err := col.FindOne(context.Background(), filter).Err()
 	return err == nil
 }
 
@@ -122,7 +131,7 @@ func IsVerified(email string) bool {
 	col := collection()
 
 	var result bson.M
-	err := col.FindOne(ctx, bson.M{"email": email}).Decode(&result)
+	err := col.FindOne(context.Background(), bson.M{"email": email}).Decode(&result)
 	if err != nil {
 		return false
 	}
@@ -132,7 +141,7 @@ func IsVerified(email string) bool {
 }
 
 func VerifyEmail(email string) error {
-	_, err := collection().UpdateOne(ctx, bson.M{"email": email}, bson.M{"$set": bson.M{"verified": true}})
+	_, err := collection().UpdateOne(context.Background(), bson.M{"email": email}, bson.M{"$set": bson.M{"verified": true}})
 	return err
 }
 
@@ -145,7 +154,7 @@ func GetAllUsersWithWebsites() ([]struct {
 	Websites []string `bson:"websites"`
 }, error) {
 	col := collection()
-	ctx := context.TODO()
+	ctx := context.Background()
 	cur, err := col.Find(ctx, bson.M{"verified": true})
 	if err != nil {
 		return nil, err
@@ -166,4 +175,10 @@ func GetAllUsersWithWebsites() ([]struct {
 		users = append(users, user)
 	}
 	return users, nil
+}
+
+func UpdatePassword(email, passwordHash string) error {
+	col := collection()
+	_, err := col.UpdateOne(context.Background(), bson.M{"email": email}, bson.M{"$set": bson.M{"password": passwordHash}})
+	return err
 }

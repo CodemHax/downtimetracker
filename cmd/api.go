@@ -11,16 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// AddWeb godoc
-// @Summary      Add a website
-// @Description  Adds a website for monitoring and sends verification email
-// @Tags         website
-// @Accept       json
-// @Produce      json
-// @Param        request body models.WebIn true "Website info"
-// @Success      200 {object} map[string]string
-// @Failure      400 {object} map[string]string
-// @Router       /add [post]
+
 func AddWeb(context *gin.Context) {
 	var req models.WebIn
 
@@ -56,16 +47,7 @@ func AddWeb(context *gin.Context) {
 	context.JSON(200, gin.H{"message": "Website Added successfully"})
 }
 
-// Verify godoc
-// @Summary      Verify email
-// @Description  Verifies a user's email using a token
-// @Tags         website
-// @Produce      json
-// @Param        email query string true "User Email"
-// @Param        token query string true "Verification Token"
-// @Success      200 {object} map[string]string
-// @Failure      400 {object} map[string]string
-// @Router       /verify [get]
+
 func Verify(context *gin.Context) {
 	email := context.Query("email")
 	token := context.Query("token")
@@ -136,14 +118,7 @@ func Verify(context *gin.Context) {
 	context.Data(http.StatusOK, "text/html; charset=utf-8", []byte(htmlSuccess))
 }
 
-// GetWebsites godoc
-// @Summary      Get all websites for a user
-// @Description  Returns all websites associated with the given email and their live status
-// @Tags         website
-// @Produce      json
-// @Success      200 {object} map[string][]map[string]string
-// @Failure      400 {object} map[string]string
-// @Router       /websites [get]
+
 func GetWebsites(context *gin.Context) {
 	email := context.GetString("email")
 
@@ -157,8 +132,8 @@ func GetWebsites(context *gin.Context) {
 	var sites []map[string]string
 
 	for _, url := range websites {
-		status := utils.GetLastStatus(ctx, email, url)
-		if status == "" {
+		status, err := utils.GetLastStatus(ctx, email, url)
+		if err != nil || status == "" {
 			status = "PENDING"
 		}
 		sites = append(sites, map[string]string{
@@ -170,15 +145,7 @@ func GetWebsites(context *gin.Context) {
 	context.JSON(http.StatusOK, gin.H{"websites": sites})
 }
 
-// DeleteWebsite godoc
-// @Summary      Delete a website for a user
-// @Description  Removes a website from the user's list
-// @Tags         website
-// @Param        email query string true "User Email"
-// @Param        website query string true "Website URL"
-// @Success      200 {object} map[string]string
-// @Failure      400 {object} map[string]string
-// @Router       /deleteweb [delete]
+
 func DeleteWebsite(context *gin.Context) {
 	email := context.GetString("email")
 	website := context.Query("website")
@@ -193,16 +160,15 @@ func DeleteWebsite(context *gin.Context) {
 		context.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
+	
+	ctx := context.Request.Context()
+	statusKey := "status:" + email + ":" + website
+	redis.RDB.Del(ctx, statusKey)
+
 	context.JSON(200, gin.H{"message": "Website deleted successfully"})
 }
 
-// ForceCheck godoc
-// @Summary      Force check all websites
-// @Description  Manually initiates a background check for all verified websites
-// @Tags         website
-// @Produce      json
-// @Success      200 {object} map[string]string
-// @Router       /force-check [post]
+
 func ForceCheck(context *gin.Context) {
 	go utils.CheckAllWebsites()
 	context.JSON(200, gin.H{"message": "Website check initiated in the background"})
